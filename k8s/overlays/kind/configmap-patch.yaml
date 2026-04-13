@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-devops-config
+  namespace: ai-devops
+data:
+  log_level: "DEBUG"
