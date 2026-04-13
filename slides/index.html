@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI DevOps Copilot – Implementation Slides</title>
+
+  <!-- Reveal.js CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css" />
+  <!-- Highlight.js for code blocks -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css" />
+
+  <style>
+    :root {
+      --accent: #6366f1;
+      --accent2: #06b6d4;
+      --green: #22c55e;
+      --orange: #f97316;
+      --red: #ef4444;
+    }
+
+    .reveal {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 22px;
+    }
+
+    .reveal h1 { font-size: 1.8em; color: #fff; font-weight: 700; }
+    .reveal h2 { font-size: 1.3em; color: var(--accent2); font-weight: 600; }
+    .reveal h3 { font-size: 0.95em; color: #cbd5e1; font-weight: 600; }
+
+    .title-slide { text-align: center; }
+    .title-slide h1 { font-size: 2em; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+    .title-slide .subtitle { font-size: 1.15em; color: #94a3b8; margin-top: 0.4em; }
+    .title-slide .tagline { margin-top: 1.2em; font-size: 0.95em; color: #64748b; }
+    .badge { display: inline-block; background: rgba(99,102,241,0.2); border: 1px solid var(--accent); color: #a5b4fc; border-radius: 999px; padding: 0.2em 0.75em; font-size: 0.65em; margin: 0.2em; }
+
+    /* Cards grid */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.5em; margin-top: 0.5em; }
+    .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 0.6em 0.8em; text-align: left; }
+    .card .icon { font-size: 1.2em; margin-bottom: 0.2em; }
+    .card h4 { margin: 0 0 0.2em; color: var(--accent2); font-size: 0.75em; }
+    .card p { margin: 0; font-size: 0.62em; color: #94a3b8; line-height: 1.4; }
+
+    /* Pill list */
+    .pill-list { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5em; margin-top: 0.6em; }
+    .pill-list li { background: rgba(6,182,212,0.15); border: 1px solid var(--accent2); color: var(--accent2); border-radius: 999px; padding: 0.25em 0.8em; font-size: 0.7em; }
+
+    /* Step list */
+    .steps { list-style: none; padding: 0; counter-reset: step; }
+    .steps li { counter-increment: step; display: flex; align-items: flex-start; gap: 0.7em; margin-bottom: 0.7em; font-size: 0.78em; color: #cbd5e1; }
+    .steps li::before { content: counter(step); min-width: 1.6em; height: 1.6em; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85em; flex-shrink: 0; }
+
+    /* Two-column layout */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5em; align-items: start; }
+
+    /* Architecture diagram */
+    .arch-box { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 0.6em 1em; font-size: 0.68em; color: #cbd5e1; text-align: center; }
+    .arch-arrow { text-align: center; color: #475569; font-size: 1em; }
+    .arch-layer { display: flex; gap: 0.5em; justify-content: center; flex-wrap: wrap; margin: 0.3em 0; }
+    .arch-label { font-size: 0.55em; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.2em; }
+
+    /* Feature table */
+    .feat-table { width: 100%; border-collapse: collapse; font-size: 0.7em; margin-top: 0.8em; }
+    .feat-table th { background: rgba(99,102,241,0.2); color: #a5b4fc; padding: 0.5em 0.8em; text-align: left; }
+    .feat-table td { padding: 0.45em 0.8em; border-bottom: 1px solid rgba(255,255,255,0.06); color: #cbd5e1; }
+    .feat-table tr:last-child td { border-bottom: none; }
+
+    /* Tag */
+    .tag { display: inline-block; border-radius: 4px; padding: 0.1em 0.5em; font-size: 0.62em; font-weight: 600; }
+    .tag-green { background: rgba(34,197,94,0.15); color: var(--green); }
+    .tag-blue  { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+    .tag-cyan  { background: rgba(6,182,212,0.15); color: var(--accent2); }
+    .tag-orange{ background: rgba(249,115,22,0.15); color: var(--orange); }
+
+    /* Auth flow */
+    .flow { display: flex; align-items: center; gap: 0.5em; flex-wrap: wrap; justify-content: center; margin-top: 0.8em; }
+    .flow-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 0.5em 0.9em; font-size: 0.68em; color: #e2e8f0; text-align: center; }
+    .flow-arrow { color: #475569; font-size: 1.2em; }
+
+    /* highlight accent */
+    .accent  { color: var(--accent); }
+    .accent2 { color: var(--accent2); }
+    .green   { color: var(--green); }
+    .orange  { color: var(--orange); }
+
+    /* Section title slide */
+    .section-title { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+    .section-title .num { font-size: 3.5em; font-weight: 900; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; line-height: 1; }
+    .section-title h2  { margin: 0.2em 0 0; color: #f1f5f9; font-size: 1.4em; }
+
+    .reveal pre { font-size: 0.5em !important; }
+    .reveal code { font-size: 0.8em; }
+    small { color: #64748b; font-size: 0.6em; }
+
+    /* Feature / feat tables */
+    .feat-table { font-size: 0.62em; }
+    .feat-table th, .feat-table td { padding: 0.35em 0.6em; }
+
+    /* Steps */
+    .steps li { font-size: 0.68em; margin-bottom: 0.5em; }
+
+    /* Flow */
+    .flow-box { font-size: 0.6em; padding: 0.4em 0.6em; }
+
+    /* Arch */
+    .arch-box { font-size: 0.6em; }
+
+    /* Two-col */
+    .two-col { gap: 1em; }
+
+    /* Mermaid diagram container */
+    .mermaid-wrap { display: flex; justify-content: center; align-items: flex-start; margin-top: 0.4em; overflow: hidden; }
+    .mermaid-wrap .mermaid { max-width: 100%; }
+    .mermaid-wrap svg { max-width: 100% !important; max-height: 520px !important; height: auto !important; }
+    .mermaid { font-size: 11px !important; }
+  </style>
+
+  <!-- Mermaid.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============================================================ SLIDE 1 – Title -->
+<section>
+  <div class="title-slide">
+    <div style="font-size:3.5em; margin-bottom:0.2em;">🤖</div>
+    <h1>AI DevOps Copilot</h1>
+    <div class="subtitle">Intelligent Infrastructure Assistant on Kubernetes</div>
+    <div style="margin-top:1.2em;">
+      <span class="badge">FastAPI</span>
+      <span class="badge">React</span>
+      <span class="badge">AWS Bedrock</span>
+      <span class="badge">Kubernetes</span>
+      <span class="badge">RAG</span>
+      <span class="badge">Kind / EKS</span>
+    </div>
+    <div class="tagline">Implementation Presentation · 2026</div>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 2 – Agenda -->
+<section>
+  <h2>📋 Agenda</h2>
+  <div class="cards">
+    <div class="card"><div class="icon">❓</div><h4>Problem Statement</h4><p>Why DevOps teams need an AI assistant</p></div>
+    <div class="card"><div class="icon">🏗️</div><h4>Architecture</h4><p>Full-stack system design overview</p></div>
+    <div class="card"><div class="icon">⚙️</div><h4>Backend</h4><p>FastAPI + AWS Bedrock integration</p></div>
+    <div class="card"><div class="icon">🧠</div><h4>RAG System</h4><p>Retrieval-augmented generation pipeline</p></div>
+    <div class="card"><div class="icon">🎨</div><h4>Frontend</h4><p>React + TypeScript + shadcn/ui</p></div>
+    <div class="card"><div class="icon">☸️</div><h4>Kubernetes</h4><p>Kind (local) and EKS (production)</p></div>
+    <div class="card"><div class="icon">🔐</div><h4>Security</h4><p>Bedrock API keys + IRSA</p></div>
+    <div class="card"><div class="icon">🚀</div><h4>Demo & Outcomes</h4><p>Live features and next steps</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 3 – Problem -->
+<section>
+  <h2>❓ Problem Statement</h2>
+  <div class="two-col" style="margin-top:0.8em;">
+    <div>
+      <h3>DevOps Pain Points</h3>
+      <div class="cards" style="grid-template-columns: 1fr;">
+        <div class="card"><div class="icon">🕐</div><h4>Time to Resolution</h4><p>Engineers spend hours searching runbooks, Confluence, and Slack to debug incidents</p></div>
+        <div class="card"><div class="icon">📚</div><h4>Knowledge Silos</h4><p>Infrastructure knowledge locked in individuals; hard to onboard new engineers</p></div>
+        <div class="card"><div class="icon">🔄</div><h4>Repetitive Tasks</h4><p>Writing boilerplate Terraform, K8s YAMLs, and GitHub Actions workflows repeatedly</p></div>
+      </div>
+    </div>
+    <div>
+      <h3>Our Solution</h3>
+      <div class="cards" style="grid-template-columns: 1fr;">
+        <div class="card"><div class="icon">💬</div><h4>Natural Language Interface</h4><p>Ask infrastructure questions in plain English; get actionable answers instantly</p></div>
+        <div class="card"><div class="icon">🔍</div><h4>Log Analysis</h4><p>Paste K8s / CloudWatch logs, get root cause analysis and fix suggestions</p></div>
+        <div class="card"><div class="icon">⚡</div><h4>Code Generation</h4><p>Generate production-ready Terraform, K8s manifests, and CI/CD pipelines</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 4 – Section: Architecture -->
+<section>
+  <div class="section-title">
+    <div class="num">01</div>
+    <h2>System Architecture</h2>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 5 – Architecture Diagram (Mermaid) -->
+<section>
+  <h2>🏗️ System Architecture</h2>
+  <div class="mermaid-wrap">
+    <pre class="mermaid">
+graph TB
+    UI[React Frontend<br/>TailwindCSS + shadcn/ui]
+    ALB[AWS ALB]
+    NGINX[Nginx]
+    API[FastAPI Backend<br/>Python 3.11]
+    BEDROCK[BedrockService]
+    VECTOR[VectorService]
+    K8S[KubernetesService]
+    BR[AWS Bedrock<br/>Claude 3 Sonnet]
+    CW[CloudWatch Logs]
+    OS[OpenSearch<br/>Vector Store]
+    KIND[Kind Cluster<br/>Local Dev]
+    EKS[Amazon EKS<br/>Production]
+
+    UI -->|HTTPS| ALB
+    ALB -->|/api| API
+    ALB -->|/| NGINX
+    API --> BEDROCK
+    API --> VECTOR
+    API --> K8S
+    BEDROCK -->|Invoke Model| BR
+    VECTOR -->|Search| OS
+    K8S -->|kubectl| CW
+    EKS -.->|Hosts| API
+    KIND -.->|Local| API
+
+    style UI fill:#61dafb,color:#000
+    style API fill:#009688,color:#fff
+    style BR fill:#ff9900,color:#000
+    style OS fill:#005eb8,color:#fff
+    style EKS fill:#ff9900,color:#000
+    style KIND fill:#326ce5,color:#fff
+    </pre>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 6 – Tech Stack -->
+<section>
+  <h2>🛠️ Technology Stack</h2>
+  <table class="feat-table">
+    <thead><tr><th>Layer</th><th>Technology</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag tag-cyan">Frontend</span></td><td>React 18 + TypeScript + Vite</td><td>SPA with type-safe components</td></tr>
+      <tr><td><span class="tag tag-cyan">Frontend</span></td><td>TailwindCSS + shadcn/ui</td><td>Modern, accessible UI components</td></tr>
+      <tr><td><span class="tag tag-blue">Backend</span></td><td>FastAPI + Uvicorn</td><td>Async REST API, OpenAPI docs</td></tr>
+      <tr><td><span class="tag tag-blue">Backend</span></td><td>LangChain + langchain-aws</td><td>LLM orchestration & RAG pipeline</td></tr>
+      <tr><td><span class="tag tag-orange">AI</span></td><td>AWS Bedrock – Claude 3 Sonnet</td><td>Foundation model inference</td></tr>
+      <tr><td><span class="tag tag-orange">AI</span></td><td>OpenSearch / Pinecone</td><td>Vector similarity search</td></tr>
+      <tr><td><span class="tag tag-green">Infra</span></td><td>Kubernetes + Kustomize</td><td>Container orchestration</td></tr>
+      <tr><td><span class="tag tag-green">Infra</span></td><td>Terraform</td><td>IaC for EKS, VPC, OpenSearch</td></tr>
+      <tr><td><span class="tag tag-green">Infra</span></td><td>Kind (Kubernetes in Docker)</td><td>Local cluster for development</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ SLIDE 6b – Data Flow (Mermaid) -->
+<section>
+  <h2>🔄 Data Flow – Chat & Log Analysis</h2>
+  <div class="mermaid-wrap">
+    <pre class="mermaid">
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Backend
+    participant Bedrock
+    participant VectorDB
+    participant K8s
+
+    User->>Frontend: Ask Question
+    Frontend->>Backend: POST /api/v1/chat
+    Backend->>VectorDB: Search Similar Docs
+    VectorDB-->>Backend: Return Context
+    Backend->>Bedrock: Generate Response (RAG context)
+    Bedrock-->>Backend: AI Response
+    Backend-->>Frontend: JSON Response
+    Frontend-->>User: Display Answer
+
+    Note over User,K8s: Log Analysis Flow
+    User->>Frontend: Paste Logs
+    Frontend->>Backend: POST /api/v1/analyze
+    Backend->>K8s: Get Pod Logs
+    K8s-->>Backend: Log Data
+    Backend->>Bedrock: Analyze Logs
+    Bedrock-->>Backend: Root Cause + Fix
+    Backend-->>Frontend: Analysis Results
+    Frontend-->>User: Display Insights
+    </pre>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 7 – Section: Backend -->
+<section>
+  <div class="section-title">
+    <div class="num">02</div>
+    <h2>Backend Service</h2>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 8 – Backend API -->
+<section>
+  <h2>⚙️ FastAPI Backend</h2>
+  <div class="two-col">
+    <div>
+      <h3>API Endpoints</h3>
+      <table class="feat-table" style="margin-top:0.5em;">
+        <thead><tr><th>Route</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>POST /api/v1/chat</code></td><td>Natural language Q&amp;A</td></tr>
+          <tr><td><code>POST /api/v1/analyze</code></td><td>Log &amp; error analysis</td></tr>
+          <tr><td><code>POST /api/v1/generate</code></td><td>IaC / config generation</td></tr>
+          <tr><td><code>POST /api/v1/logs</code></td><td>CloudWatch log query</td></tr>
+          <tr><td><code>GET  /api/v1/health</code></td><td>Liveness probe</td></tr>
+          <tr><td><code>GET  /api/v1/ready</code></td><td>Readiness probe</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3>Service Architecture</h3>
+      <div class="cards" style="grid-template-columns:1fr; gap:0.5em; margin-top:0.5em;">
+        <div class="card"><h4>BedrockService</h4><p>Wraps boto3 Bedrock Runtime; supports sync, streaming, and RAG-enhanced invocations</p></div>
+        <div class="card"><h4>VectorService</h4><p>Manages OpenSearch / Pinecone indexes; handles embedding + similarity search</p></div>
+        <div class="card"><h4>LogService</h4><p>Queries CloudWatch Logs Insights; returns structured log events</p></div>
+        <div class="card"><h4>KubernetesService</h4><p>Reads pods, events, and deployment status via the K8s Python client</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 9 – Bedrock Integration -->
+<section>
+  <h2>🤖 AWS Bedrock Integration</h2>
+  <div class="two-col">
+    <div>
+      <h3>Model Configuration</h3>
+      <pre><code class="language-python"># bedrock_service.py
+client = boto3.client(
+    service_name="bedrock-runtime",
+    region_name=settings.AWS_REGION,
+)
+
+body = {
+    "anthropic_version": "bedrock-2023-05-31",
+    "max_tokens": 4096,
+    "temperature": 0.7,
+    "messages": [{"role": "user", "content": prompt}],
+    "system": system_prompt,
+}
+
+response = client.invoke_model(
+    modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+    body=json.dumps(body),
+)</code></pre>
+    </div>
+    <div>
+      <h3>Authentication Priority</h3>
+      <ol class="steps" style="margin-top:0.5em;">
+        <li><strong class="accent2">Bedrock API Key</strong> – set <code>AWS_BEDROCK_API_KEY</code>; mapped internally to <code>AWS_BEARER_TOKEN_BEDROCK</code> (boto3 env var)</li>
+        <li><strong class="accent">IAM Credentials</strong> – set <code>AWS_ACCESS_KEY_ID</code> + <code>AWS_SECRET_ACCESS_KEY</code> as fallback</li>
+        <li><strong>IRSA (Production)</strong> – EKS pod identity; no credentials stored in cluster</li>
+      </ol>
+      <div class="card" style="margin-top:0.8em; border-color: var(--green);">
+        <h4 class="green">✅ Zero-credential local dev</h4>
+        <p>Generate a Bedrock API key (long-term up to 30d or short-term up to 12h) from the AWS Console → Bedrock → API Keys, then <code>export AWS_BEDROCK_API_KEY=&lt;key&gt;</code></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 10 – Section: RAG -->
+<section>
+  <div class="section-title">
+    <div class="num">03</div>
+    <h2>RAG Pipeline</h2>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 11 – RAG -->
+<section>
+  <h2>🧠 Retrieval-Augmented Generation</h2>
+  <div class="flow" style="margin-bottom:0.8em;">
+    <div class="flow-box">📝<br/>User Query</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">🔢<br/>Embed Query<br/><small>sentence-transformers</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">🔎<br/>Vector Search<br/><small>OpenSearch / Pinecone</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">📄<br/>Top-K Docs<br/><small>Relevant context</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">🤖<br/>Bedrock LLM<br/><small>Augmented prompt</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box">✅<br/>Answer</div>
+  </div>
+  <div class="two-col">
+    <div>
+      <h3>Knowledge Sources</h3>
+      <ul class="pill-list" style="margin-top:0.4em;">
+        <li>Kubernetes runbooks</li>
+        <li>Terraform best practices</li>
+        <li>AWS documentation</li>
+        <li>CI/CD playbooks</li>
+        <li>Incident post-mortems</li>
+        <li>Custom org wikis</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Vector DB Options</h3>
+      <div class="cards" style="grid-template-columns:1fr 1fr; gap:0.5em; margin-top:0.4em;">
+        <div class="card" style="border-color:var(--accent2);"><h4>OpenSearch</h4><p>Self-hosted or AWS managed; default for production EKS</p></div>
+        <div class="card"><h4>Pinecone</h4><p>Managed vector DB; ideal for quick local dev</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 11b – RAG Architecture (Mermaid) -->
+<section>
+  <h2>🧠 RAG System Architecture</h2>
+  <div class="mermaid-wrap">
+    <pre class="mermaid">
+graph LR
+    subgraph Ingestion
+        DOC[Docs / Runbooks]
+        CHUNK[Text Chunking<br/>512 tokens]
+        EMBED[SentenceTransformer<br/>all-MiniLM-L6-v2]
+    end
+    subgraph Storage
+        VDB[(Vector DB<br/>OpenSearch/Pinecone)]
+        INDEX[Vector Index<br/>Cosine Similarity]
+    end
+    subgraph QueryProcessing
+        QUERY[User Query]
+        QEMBED[Query Embedding]
+        SEARCH[Semantic Search<br/>Top-K Results]
+    end
+    subgraph ResponseGeneration
+        CONTEXT[Retrieved Context]
+        PROMPT[Augmented Prompt]
+        LLM[Claude 3 Sonnet]
+        RESPONSE[AI Response]
+    end
+
+    DOC --> CHUNK --> EMBED --> VDB --> INDEX
+    QUERY --> QEMBED --> SEARCH --> VDB
+    VDB --> CONTEXT
+    CONTEXT --> PROMPT
+    QUERY --> PROMPT --> LLM --> RESPONSE
+
+    style VDB fill:#005eb8,color:#fff
+    style LLM fill:#ff9900,color:#000
+    style EMBED fill:#009688,color:#fff
+    </pre>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 12 – Section: Frontend -->
+<section>
+  <div class="section-title">
+    <div class="num">04</div>
+    <h2>Frontend</h2>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 13 – Frontend -->
+<section>
+  <h2>🎨 React Frontend</h2>
+  <div class="two-col">
+    <div>
+      <h3>UI Features</h3>
+      <div class="cards" style="grid-template-columns:1fr; gap:0.5em; margin-top:0.5em;">
+        <div class="card"><div class="icon">💬</div><h4>Chat Interface</h4><p>Conversational UI with message history, streaming responses, and markdown rendering</p></div>
+        <div class="card"><div class="icon">📊</div><h4>Log Analyzer</h4><p>Paste raw K8s / CloudWatch logs; get structured root cause analysis</p></div>
+        <div class="card"><div class="icon">⚡</div><h4>Code Generator</h4><p>Select type (Terraform / K8s YAML / GitHub Actions), describe requirements, get ready-to-use code</p></div>
+        <div class="card"><div class="icon">🔍</div><h4>Infrastructure Q&amp;A</h4><p>Ask anything about your infra; RAG-powered answers with source references</p></div>
+      </div>
+    </div>
+    <div>
+      <h3>Technology Choices</h3>
+      <table class="feat-table" style="margin-top:0.5em;">
+        <thead><tr><th>Library</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>React 18</td><td>Concurrent rendering, Suspense</td></tr>
+          <tr><td>TypeScript 5</td><td>Type safety across the stack</td></tr>
+          <tr><td>Vite 5</td><td>Fast HMR, optimized builds</td></tr>
+          <tr><td>TailwindCSS 3</td><td>Utility-first, consistent design</td></tr>
+          <tr><td>shadcn/ui</td><td>Accessible, composable components</td></tr>
+          <tr><td>Lucide React</td><td>Consistent icon set</td></tr>
+          <tr><td>React Query</td><td>Server state management</td></tr>
+        </tbody>
+      </table>
+      <div class="card" style="margin-top:0.6em;">
+        <h4>Build & Serve</h4>
+        <p>Multi-stage Docker build → Nginx Alpine serving static assets · Gzip enabled · SPA fallback routing</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 14 – Section: K8s -->
+<section>
+  <div class="section-title">
+    <div class="num">05</div>
+    <h2>Kubernetes Deployment</h2>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 15 – K8s Overview -->
+<section>
+  <h2>☸️ Kubernetes Architecture</h2>
+  <div class="two-col">
+    <div>
+      <h3>Resource Hierarchy</h3>
+      <div style="font-size:0.68em; line-height:1.8; color:#cbd5e1; font-family: monospace;">
+        Namespace: <span class="accent2">ai-devops</span><br/>
+        ├─ Deployment: <span class="accent">backend</span> (2 replicas)<br/>
+        │&nbsp;&nbsp;└─ Container: FastAPI (port 8000)<br/>
+        ├─ Deployment: <span class="accent">frontend</span> (2 replicas)<br/>
+        │&nbsp;&nbsp;└─ Container: Nginx (port 80)<br/>
+        ├─ Service: <span class="green">backend</span> (ClusterIP → NodePort)<br/>
+        ├─ Service: <span class="green">frontend</span> (ClusterIP → NodePort)<br/>
+        ├─ ConfigMap: <span class="orange">ai-devops-config</span><br/>
+        ├─ Secret: <span class="orange">bedrock-credentials</span><br/>
+        └─ ServiceAccount: <span class="orange">ai-devops-backend</span>
+      </div>
+    </div>
+    <div>
+      <h3>Kustomize Overlays</h3>
+      <div style="font-size:0.68em; line-height:1.8; color:#cbd5e1; font-family: monospace; margin-bottom:0.6em;">
+        k8s/<br/>
+        ├─ base/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← shared manifests<br/>
+        └─ overlays/<br/>
+        &nbsp;&nbsp;&nbsp;├─ kind/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← local dev (NodePort)<br/>
+        &nbsp;&nbsp;&nbsp;└─ eks/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← production (ALB)
+      </div>
+      <table class="feat-table">
+        <thead><tr><th>Setting</th><th>Kind</th><th>EKS</th></tr></thead>
+        <tbody>
+          <tr><td>Replicas</td><td>1</td><td>2+</td></tr>
+          <tr><td>Service</td><td>NodePort</td><td>LoadBalancer</td></tr>
+          <tr><td>Auth</td><td>API Key</td><td>IRSA</td></tr>
+          <tr><td>Resources</td><td>Reduced</td><td>Full</td></tr>
+          <tr><td>Log Level</td><td>DEBUG</td><td>INFO</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 15b – K8s Hierarchy (Mermaid) -->
+<section>
+  <h2>☸️ Kubernetes Resource Hierarchy</h2>
+  <div class="mermaid-wrap">
+    <pre class="mermaid">
+graph TB
+    subgraph NS[Namespace: ai-devops]
+        subgraph Deployments
+            BDEP[Backend Deployment<br/>2 replicas]
+            FDEP[Frontend Deployment<br/>2 replicas]
+        end
+        subgraph Services
+            BSVC[backend:8000]
+            FSVC[frontend:80]
+        end
+        subgraph Config
+            CM[ConfigMap<br/>ai-devops-config]
+            SEC[Secret<br/>bedrock-credentials]
+        end
+        subgraph RBAC
+            SA[ServiceAccount]
+            CR[ClusterRole]
+            CRB[ClusterRoleBinding]
+        end
+        ING[ALB Ingress<br/>HTTPS]
+    end
+
+    BDEP --> BSVC
+    FDEP --> FSVC
+    BDEP -.->|uses| CM
+    BDEP -.->|uses| SEC
+    BDEP -.->|uses| SA
+    SA --> CR --> CRB
+    ING --> BSVC
+    ING --> FSVC
+
+    style BDEP fill:#009688,color:#fff
+    style FDEP fill:#61dafb,color:#000
+    style ING fill:#ff9900,color:#000
+    </pre>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 16 – Deploy Script -->
+<section>
+  <h2>🚀 One-Command Local Deploy</h2>
+  <pre><code class="language-bash">export AWS_BEDROCK_API_KEY=&lt;your-bedrock-api-key&gt;
+./scripts/deploy-kind.sh</code></pre>
+  <h3 style="margin-top:0.8em;">What the script does</h3>
+  <ol class="steps">
+    <li>Creates a <strong>Kind cluster</strong> named <code>ai-devops</code> with port mappings <code>3000→30080</code> and <code>8000→30081</code></li>
+    <li><strong>Builds Docker images</strong> for backend (FastAPI) and frontend (React/Nginx)</li>
+    <li><strong>Loads images</strong> directly into the Kind node (no registry needed)</li>
+    <li>Runs <strong><code>kubectl apply -k k8s/overlays/kind</code></strong> — creates namespace, ConfigMap, RBAC, services, and deployments</li>
+    <li>Creates <strong>K8s Secrets</strong>: <code>bedrock-credentials</code> (from <code>AWS_BEDROCK_API_KEY</code>)</li>
+    <li>Waits for deployments to be <strong>Available</strong> (<code>kubectl wait --timeout=300s</code>)</li>
+    <li>Patches services to <strong>NodePort</strong> for localhost access</li>
+  </ol>
+</section>
+
+<!-- ============================================================ SLIDE 17 – Section: Security -->
+<section>
+  <div class="section-title">
+    <div class="num">06</div>
+    <h2>Security Architecture</h2>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 18 – Security -->
+<section>
+  <h2>🔐 Security Model</h2>
+  <div class="two-col">
+    <div>
+      <h3>Authentication Tiers</h3>
+      <div class="cards" style="grid-template-columns:1fr; gap:0.5em; margin-top:0.5em;">
+        <div class="card" style="border-color:var(--green);">
+          <div class="icon">🔑</div>
+          <h4 class="green">Bedrock API Key (Dev)</h4>
+          <p>Short-term (≤12h) or long-term (≤30d) key from AWS Console. Set via <code>AWS_BEDROCK_API_KEY</code>; no IAM setup needed</p>
+        </div>
+        <div class="card" style="border-color:var(--accent2);">
+          <div class="icon">👤</div>
+          <h4 class="accent2">IAM Credentials (CI/CD)</h4>
+          <p><code>AWS_ACCESS_KEY_ID</code> + <code>AWS_SECRET_ACCESS_KEY</code>. Stored as K8s secrets; optional fallback</p>
+        </div>
+        <div class="card" style="border-color:var(--accent);">
+          <div class="icon">🏭</div>
+          <h4 class="accent">IRSA (Production EKS)</h4>
+          <p>IAM Role for Service Account. Pod identity; zero credentials stored in cluster — recommended for production</p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>Additional Security Controls</h3>
+      <div class="cards" style="grid-template-columns:1fr; gap:0.5em; margin-top:0.5em;">
+        <div class="card"><h4>RBAC</h4><p>ServiceAccount with least-privilege ClusterRole; only read access to pods and logs</p></div>
+        <div class="card"><h4>Network Policy</h4><p>Ingress/Egress restricted; backend only reachable from frontend namespace</p></div>
+        <div class="card"><h4>Non-root Container</h4><p>Dockerfile creates <code>appuser</code> (UID 1000); runs with read-only root filesystem</p></div>
+        <div class="card"><h4>Secrets Management</h4><p>All credentials injected as K8s Secrets (never in ConfigMaps or env literals)</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 18b – Security Architecture (Mermaid) -->
+<section>
+  <h2>🔐 Security Architecture</h2>
+  <div class="mermaid-wrap">
+    <pre class="mermaid">
+graph TB
+    subgraph AuthZ[Authentication and Authorization]
+        USER[User Request]
+        ALB_SEC[ALB HTTPS/TLS]
+        subgraph K8sRBAC[Kubernetes RBAC]
+            SA2[ServiceAccount<br/>ai-devops-backend]
+            CR2[ClusterRole]
+            CRB2[ClusterRoleBinding]
+        end
+        subgraph AWSIAM[AWS IAM]
+            IRSA[IRSA<br/>IAM Role for SA]
+            P1[Bedrock Policy]
+            P2[CloudWatch Policy]
+        end
+    end
+    subgraph DataSec[Data Security]
+        TLS[TLS 1.2+ In Transit]
+        ENC[Encryption At Rest]
+        SECRETS[K8s Secrets]
+    end
+
+    USER --> ALB_SEC --> SA2
+    SA2 --> IRSA --> P1
+    IRSA --> P2
+    SA2 --> CR2 --> CRB2
+    TLS --> ENC --> SECRETS
+
+    style IRSA fill:#ff9900,color:#000
+    style TLS fill:#22c55e,color:#000
+    style ENC fill:#22c55e,color:#000
+    </pre>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 19 – Section: EKS -->
+<section>
+  <div class="section-title">
+    <div class="num">07</div>
+    <h2>Production: EKS + Terraform</h2>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 20 – Terraform -->
+<section>
+  <h2>🏗️ Terraform Infrastructure</h2>
+  <div class="two-col">
+    <div>
+      <h3>EKS Module</h3>
+      <div class="cards" style="grid-template-columns:1fr; gap:0.4em; margin-top:0.4em;">
+        <div class="card"><h4>VPC</h4><p>Multi-AZ VPC with public/private subnets, NAT Gateway, and Internet Gateway</p></div>
+        <div class="card"><h4>EKS Cluster</h4><p>Managed control plane with OIDC provider for IRSA</p></div>
+        <div class="card"><h4>Node Groups</h4><p>Auto-scaling managed node groups; configurable instance types</p></div>
+        <div class="card"><h4>IAM Policies</h4><p>Bedrock InvokeModel, CloudWatch Logs, OpenSearch access — least privilege</p></div>
+      </div>
+    </div>
+    <div>
+      <h3>OpenSearch Module</h3>
+      <div class="cards" style="grid-template-columns:1fr; gap:0.4em; margin-top:0.4em;">
+        <div class="card"><h4>Domain</h4><p>VPC-deployed OpenSearch domain; encryption at rest and in transit</p></div>
+        <div class="card"><h4>Access Policy</h4><p>Resource-based policy; only EKS node IAM role can read/write</p></div>
+        <div class="card"><h4>EBS</h4><p>Configurable EBS volume per node for vector index storage</p></div>
+      </div>
+      <div class="card" style="margin-top:0.5em;">
+        <h4>Outputs used by K8s</h4>
+        <p><code>cluster_endpoint</code>, <code>backend_pod_role_arn</code>, <code>opensearch_endpoint</code> fed into Kustomize EKS overlay</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 20b – Deployment Architecture (Mermaid) -->
+<section>
+  <h2>🏗️ AWS Deployment Architecture</h2>
+  <div class="mermaid-wrap">
+    <pre class="mermaid">
+graph TB
+    subgraph AWS[AWS Cloud - us-east-1]
+        subgraph VPC[VPC 10.0.0.0/16]
+            subgraph Public[Public Subnets]
+                ALB2[ALB]
+                NAT1[NAT GW AZ-1]
+                NAT2[NAT GW AZ-2]
+            end
+            subgraph AZ1[Private AZ-1]
+                POD1[Backend Pod]
+                POD2[Frontend Pod]
+            end
+            subgraph AZ2[Private AZ-2]
+                POD3[Backend Pod]
+                POD4[Frontend Pod]
+            end
+            subgraph Data[Data Subnet]
+                OS1[OpenSearch Node 1]
+                OS2[OpenSearch Node 2]
+            end
+        end
+        BR2[Bedrock Claude 3]
+        CW2[CloudWatch]
+    end
+    INTERNET[Internet] --> ALB2
+    ALB2 --> POD1 & POD3
+    POD1 --> NAT1 --> BR2
+    POD3 --> NAT2 --> BR2
+    POD1 & POD3 --> OS1 & OS2
+    POD1 & POD3 --> CW2
+
+    style ALB2 fill:#ff9900,color:#000
+    style BR2 fill:#ff9900,color:#000
+    style OS1 fill:#005eb8,color:#fff
+    style OS2 fill:#005eb8,color:#fff
+    </pre>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 20c – CI/CD Pipeline (Mermaid) -->
+<section>
+  <h2>🔁 CI/CD Pipeline</h2>
+  <div class="mermaid-wrap">
+    <pre class="mermaid">
+graph LR
+    subgraph Source[Source Control]
+        GIT[GitHub Repo]
+        PR[Pull Request]
+    end
+    subgraph CI[CI Pipeline]
+        LINT[Linting<br/>ESLint / Black]
+        TEST[Unit Tests<br/>Pytest / Jest]
+        BUILD[Build Images<br/>Docker]
+    end
+    subgraph CD[CD Pipeline]
+        PUSH[Push to ECR]
+        DEV[Deploy to Dev<br/>Kind]
+        PROD[Deploy to Prod<br/>EKS]
+    end
+    subgraph Monitor[Monitoring]
+        HC[Health Checks]
+        RB[Auto Rollback]
+    end
+
+    GIT --> PR --> LINT --> TEST --> BUILD
+    BUILD --> PUSH --> DEV --> PROD
+    PROD --> HC
+    HC -->|Failure| RB
+
+    style BUILD fill:#2088ff,color:#fff
+    style PROD fill:#28a745,color:#fff
+    style RB fill:#ef4444,color:#fff
+    </pre>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 21 – Section: Features -->
+<section>
+  <div class="section-title">
+    <div class="num">08</div>
+    <h2>Key Features</h2>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 22 – Feature Showcase -->
+<section>
+  <h2>✨ Feature Showcase</h2>
+  <table class="feat-table">
+    <thead><tr><th>Feature</th><th>Input</th><th>Output</th><th>Model Used</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Infrastructure Q&amp;A</strong></td>
+        <td>"How do I scale EKS node groups?"</td>
+        <td>Step-by-step guidance with best practices</td>
+        <td><span class="tag tag-orange">Claude 3 Sonnet + RAG</span></td>
+      </tr>
+      <tr>
+        <td><strong>Log Analysis</strong></td>
+        <td>Raw pod crash logs</td>
+        <td>Root cause + recommended fix</td>
+        <td><span class="tag tag-orange">Claude 3 Sonnet</span></td>
+      </tr>
+      <tr>
+        <td><strong>Terraform Generator</strong></td>
+        <td>"EKS cluster with 3 AZs"</td>
+        <td>Production-ready <code>.tf</code> files</td>
+        <td><span class="tag tag-orange">Claude 3 Sonnet</span></td>
+      </tr>
+      <tr>
+        <td><strong>K8s YAML Generator</strong></td>
+        <td>"Deployment with HPA and PDB"</td>
+        <td>Ready-to-apply YAML manifest</td>
+        <td><span class="tag tag-orange">Claude 3 Sonnet</span></td>
+      </tr>
+      <tr>
+        <td><strong>GitHub Actions CI/CD</strong></td>
+        <td>"Deploy to EKS on push to main"</td>
+        <td>Complete workflow YAML</td>
+        <td><span class="tag tag-orange">Claude 3 Sonnet</span></td>
+      </tr>
+      <tr>
+        <td><strong>K8s Cluster Analyzer</strong></td>
+        <td>Live pod/event data</td>
+        <td>Health summary + anomaly alerts</td>
+        <td><span class="tag tag-orange">Claude 3 Sonnet + K8s API</span></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ SLIDE 23 – Access & Ports -->
+<section>
+  <h2>🌐 Access & Endpoints</h2>
+  <div class="cards" style="margin-top:0.8em;">
+    <div class="card" style="border-color:var(--accent2);">
+      <div class="icon">🖥️</div>
+      <h4>Frontend</h4>
+      <p>http://localhost:3000</p>
+      <p style="margin-top:0.3em;">React SPA served by Nginx via NodePort 30080</p>
+    </div>
+    <div class="card" style="border-color:var(--accent);">
+      <div class="icon">⚙️</div>
+      <h4>Backend API</h4>
+      <p>http://localhost:8000</p>
+      <p style="margin-top:0.3em;">FastAPI REST endpoints via NodePort 30081</p>
+    </div>
+    <div class="card" style="border-color:var(--green);">
+      <div class="icon">📖</div>
+      <h4>API Docs</h4>
+      <p>http://localhost:8000/docs</p>
+      <p style="margin-top:0.3em;">Interactive Swagger UI (OpenAPI 3.0)</p>
+    </div>
+    <div class="card" style="border-color:var(--orange);">
+      <div class="icon">❤️</div>
+      <h4>Health Checks</h4>
+      <p>/api/v1/health (liveness)<br/>/api/v1/ready (readiness)</p>
+    </div>
+  </div>
+  <h3 style="margin-top:0.8em;">Useful kubectl commands</h3>
+  <pre><code class="language-bash">kubectl get pods -n ai-devops
+kubectl logs -f deployment/backend -n ai-devops
+kubectl port-forward -n ai-devops svc/frontend 3000:80</code></pre>
+</section>
+
+<!-- ============================================================ SLIDE 24 – Lessons Learned -->
+<section>
+  <h2>📝 Implementation Lessons Learned</h2>
+  <div class="cards">
+    <div class="card" style="border-color:var(--green);">
+      <div class="icon">✅</div>
+      <h4 class="green">Bedrock API Keys</h4>
+      <p>Use <code>AWS_BEDROCK_API_KEY</code> for quick setup; maps to <code>AWS_BEARER_TOKEN_BEDROCK</code> recognized by boto3. No IAM config needed for local dev</p>
+    </div>
+    <div class="card" style="border-color:var(--orange);">
+      <div class="icon">⚠️</div>
+      <h4 class="orange">K8s Env Var Conflicts</h4>
+      <p>Kubernetes auto-injects service URLs as <code>&lt;SERVICE&gt;_PORT=tcp://...</code>. Avoid naming config vars after service names (e.g., use <code>APP_PORT</code> not <code>BACKEND_PORT</code>)</p>
+    </div>
+    <div class="card" style="border-color:var(--accent2);">
+      <div class="icon">📦</div>
+      <h4 class="accent2">Dependency Pinning</h4>
+      <p>Pin <code>boto3≥1.34.72</code> for <code>langchain-aws</code> compatibility. Use <code>requests-aws4auth</code> for OpenSearch AWS auth</p>
+    </div>
+    <div class="card" style="border-color:var(--accent);">
+      <div class="icon">🔄</div>
+      <h4 class="accent">Kustomize Generators</h4>
+      <p>Use <code>behavior: replace</code> (not <code>merge</code>) in overlay <code>configMapGenerator</code> when base has a static ConfigMap, or use patch files instead</p>
+    </div>
+    <div class="card">
+      <div class="icon">🐳</div>
+      <h4>Docker Build</h4>
+      <p>Use <code>npm install</code> (not <code>npm ci</code>) when <code>package-lock.json</code> is absent. Add <code>vite-env.d.ts</code> for <code>import.meta.env</code> TypeScript support</p>
+    </div>
+    <div class="card">
+      <div class="icon">🔑</div>
+      <h4>IRSA vs API Keys</h4>
+      <p>IRSA (production) = zero-credential pods. API keys = easiest for local dev. Never store long-lived IAM keys in container images</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 25 – Next Steps -->
+<section>
+  <h2>🗺️ Roadmap & Next Steps</h2>
+  <div class="two-col">
+    <div>
+      <h3>Near-term</h3>
+      <ol class="steps" style="margin-top:0.5em;">
+        <li>Ingest org-specific runbooks and wikis into OpenSearch vector index</li>
+        <li>Add <strong>streaming responses</strong> via Server-Sent Events (SSE) for chat</li>
+        <li>Integrate <strong>CloudWatch Logs Insights</strong> auto-query on anomaly detection</li>
+        <li>Add <strong>conversation history</strong> persistence (PostgreSQL / Redis)</li>
+      </ol>
+    </div>
+    <div>
+      <h3>Long-term</h3>
+      <ol class="steps" style="margin-top:0.5em;">
+        <li>Deploy to <strong>Production EKS</strong> using Terraform modules and IRSA</li>
+        <li>Add <strong>Slack / Teams integration</strong> for alerting and incident chat</li>
+        <li>Build <strong>auto-remediation</strong> workflows triggered by PagerDuty alerts</li>
+        <li>Fine-tune a <strong>custom Bedrock model</strong> on org-specific incident data</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ SLIDE 26 – Summary -->
+<section>
+  <h2>✅ Summary</h2>
+  <div class="cards" style="margin-top:0.6em;">
+    <div class="card" style="border-color:var(--accent2);">
+      <div class="icon">🏗️</div>
+      <h4>Full-Stack System</h4>
+      <p>React SPA + FastAPI backend running in Kubernetes, deployed with a single script</p>
+    </div>
+    <div class="card" style="border-color:var(--accent);">
+      <div class="icon">🤖</div>
+      <h4>AI-Powered</h4>
+      <p>Claude 3 Sonnet via AWS Bedrock with RAG for domain-specific DevOps knowledge</p>
+    </div>
+    <div class="card" style="border-color:var(--green);">
+      <div class="icon">☸️</div>
+      <h4>Production-Ready</h4>
+      <p>Kustomize overlays, health probes, RBAC, resource limits, and Terraform EKS modules</p>
+    </div>
+    <div class="card" style="border-color:var(--orange);">
+      <div class="icon">🔐</div>
+      <h4>Secure by Default</h4>
+      <p>Bedrock API keys for dev, IRSA for production; no long-lived credentials in images</p>
+    </div>
+  </div>
+  <div style="text-align:center; margin-top:1.2em; font-size:0.75em; color:#64748b;">
+    Thank you · Questions? · <span class="accent2">github.com / ai-devops-copilot</span>
+  </div>
+</section>
+
+</div><!-- .slides -->
+</div><!-- .reveal -->
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'dark',
+    themeVariables: { fontSize: '11px', fontFamily: 'Segoe UI, system-ui, sans-serif' },
+    flowchart: { htmlLabels: true, curve: 'basis' },
+    sequence: { actorMargin: 40, messageMargin: 20 },
+  });
+
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    transitionSpeed: 'fast',
+    backgroundTransition: 'fade',
+    progress: true,
+    controls: true,
+    center: false,
+    width: 1200,
+    height: 700,
+    margin: 0.04,
+    view: 'scroll',
+    scrollSnapping: 'proximity',
+    plugins: [ RevealHighlight, RevealNotes ],
+  });
+
+  Reveal.on('ready', () => mermaid.run());
+</script>
+</body>
+</html>
